@@ -1,0 +1,47 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: yt-explorer-backend
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - YOUTUBE_CHANNEL_ID=${YOUTUBE_CHANNEL_ID}
+      - YOUTUBE_API_KEY=${YOUTUBE_API_KEY}
+      - DATABASE_PATH=/data/db/yt-explorer.db
+      - DOWNLOADS_PATH=/data/downloads
+      - SYNC_SCHEDULE=0 2 * * *  # Daily at 2 AM
+    volumes:
+      - yt-data:/data
+      - yt-downloads:/data/downloads
+    networks:
+      - yt-explorer-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: yt-explorer-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - yt-explorer-network
+
+volumes:
+  yt-data:
+    driver: local
+  yt-downloads:
+    driver: local
+
+networks:
+  yt-explorer-network:
+    driver: bridge

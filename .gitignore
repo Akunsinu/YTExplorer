@@ -1,0 +1,15 @@
+node_modules/
+dist/
+build/
+.env
+.env.local
+*.db
+*.db-journal
+*.db-shm
+*.db-wal
+downloads/
+*.log
+.DS_Store
+._*
+.vscode/
+.idea/
