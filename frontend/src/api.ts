@@ -30,3 +30,20 @@ export const syncApi = {
   getStatus: () => api.get<SyncStatus>('/sync/status').then(res => res.data),
   start: (full: boolean = false) => api.post('/sync/start', { full }).then(res => res.data)
 };
+
+export interface DownloadStatus {
+  videoId: string;
+  title: string;
+  status: 'queued' | 'downloading' | 'completed' | 'failed';
+  progress?: number;
+  error?: string;
+  startedAt?: string;
+  completedAt?: string;
+}
+
+export const downloadsApi = {
+  getAll: () => api.get<DownloadStatus[]>('/downloads/status').then(res => res.data),
+  getById: (id: string) => api.get<DownloadStatus>(`/downloads/status/${id}`).then(res => res.data),
+  getFailed: () => api.get<{ failedVideoIds: string[], count: number }>('/downloads/failed').then(res => res.data),
+  clear: () => api.post('/downloads/clear').then(res => res.data)
+};

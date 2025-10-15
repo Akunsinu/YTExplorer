@@ -55,6 +55,18 @@ export default function Layout() {
             </div>
 
             <div className="flex items-center space-x-4">
+              {/* Downloads Link */}
+              <Link
+                to="/downloads"
+                className="flex items-center space-x-1 text-gray-300 hover:text-white transition-colors"
+                title="View download progress"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+                <span className="hidden md:inline text-sm">Downloads</span>
+              </Link>
+
               {/* Search */}
               <form onSubmit={handleSearch} className="relative">
                 <input
