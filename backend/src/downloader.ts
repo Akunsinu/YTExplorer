@@ -6,8 +6,20 @@ import { existsSync } from 'fs';
 
 const execAsync = promisify(exec);
 
+export interface DownloadStatus {
+  videoId: string;
+  title: string;
+  status: 'queued' | 'downloading' | 'completed' | 'failed';
+  progress?: number;
+  error?: string;
+  startedAt?: string;
+  completedAt?: string;
+}
+
 export class VideoDownloader {
   private downloadsPath: string;
+  private downloadQueue: Map<string, DownloadStatus> = new Map();
+  private failedDownloads: string[] = [];
 
   constructor(downloadsPath: string = './downloads') {
     this.downloadsPath = downloadsPath;
@@ -21,6 +33,14 @@ export class VideoDownloader {
   }
 
   async downloadVideo(videoId: string, title: string): Promise<string | null> {
+    // Update status to downloading
+    this.downloadQueue.set(videoId, {
+      videoId,
+      title,
+      status: 'downloading',
+      startedAt: new Date().toISOString()
+    });
+
     try {
       await this.ensureDownloadsDirectory();
 
@@ -30,32 +50,80 @@ export class VideoDownloader {
 
       console.log(`Downloading video: ${title} (${videoId})`);
 
-      // Use yt-dlp to download the video
-      // Format options: bestvideo+bestaudio/best (merges best video and audio)
-      const command = `yt-dlp -f "bestvideo[height<=1080]+bestaudio/best[height<=1080]" --merge-output-format mp4 -o "${outputTemplate}" "https://www.youtube.com/watch?v=${videoId}"`;
+      // Try multiple format options with fallbacks
+      const formatOptions = [
+        'bestvideo[height<=1080]+bestaudio/best[height<=1080]', // Best quality with merge
+        'best[height<=1080]',                                     // Single file, no merge needed
+        'bestvideo[height<=720]+bestaudio/best[height<=720]',   // Lower quality with merge
+        'best[height<=720]',                                      // Lower quality, no merge
+        'best'                                                    // Fallback to any quality
+      ];
 
-      const { stdout, stderr } = await execAsync(command, {
-        maxBuffer: 10 * 1024 * 1024 // 10MB buffer
+      let lastError: any = null;
+      let downloadSuccess = false;
+
+      for (const format of formatOptions) {
+        try {
+          const command = `yt-dlp -f "${format}" --merge-output-format mp4 -o "${outputTemplate}" "https://www.youtube.com/watch?v=${videoId}"`;
+
+          const { stdout, stderr } = await execAsync(command, {
+            maxBuffer: 10 * 1024 * 1024 // 10MB buffer
+          });
+
+          if (stderr && !stderr.includes('Deleting original file')) {
+            console.log(`yt-dlp stderr: ${stderr}`);
+          }
+
+          // Find the downloaded file
+          const files = await fs.readdir(this.downloadsPath);
+          const videoFile = files.find(f => f.startsWith(videoId));
+
+          if (videoFile) {
+            const relativePath = path.join('downloads', videoFile);
+            console.log(`✓ Downloaded: ${videoFile} (using format: ${format})`);
+
+            // Update status to completed
+            this.downloadQueue.set(videoId, {
+              videoId,
+              title,
+              status: 'completed',
+              startedAt: this.downloadQueue.get(videoId)?.startedAt,
+              completedAt: new Date().toISOString()
+            });
+
+            downloadSuccess = true;
+            return relativePath;
+          }
+        } catch (error: any) {
+          console.log(`Format "${format}" failed, trying next...`);
+          lastError = error;
+          continue;
+        }
+      }
+
+      // If we get here, all formats failed
+      console.error(`All download attempts failed for ${videoId}:`, lastError?.message);
+      this.downloadQueue.set(videoId, {
+        videoId,
+        title,
+        status: 'failed',
+        error: lastError?.message || 'All format options failed',
+        startedAt: this.downloadQueue.get(videoId)?.startedAt,
+        completedAt: new Date().toISOString()
       });
-
-      if (stderr && !stderr.includes('Deleting original file')) {
-        console.log(`yt-dlp stderr: ${stderr}`);
-      }
-
-      // Find the downloaded file
-      const files = await fs.readdir(this.downloadsPath);
-      const videoFile = files.find(f => f.startsWith(videoId));
-
-      if (videoFile) {
-        const relativePath = path.join('downloads', videoFile);
-        console.log(`✓ Downloaded: ${videoFile}`);
-        return relativePath;
-      }
-
-      console.warn(`Video downloaded but file not found: ${videoId}`);
+      this.failedDownloads.push(videoId);
       return null;
     } catch (error: any) {
       console.error(`Error downloading video ${videoId}:`, error.message);
+      this.downloadQueue.set(videoId, {
+        videoId,
+        title,
+        status: 'failed',
+        error: error.message,
+        startedAt: this.downloadQueue.get(videoId)?.startedAt,
+        completedAt: new Date().toISOString()
+      });
+      this.failedDownloads.push(videoId);
       return null;
     }
   }
@@ -103,5 +171,26 @@ export class VideoDownloader {
     } catch {
       return 0;
     }
+  }
+
+  getDownloadStatus(videoId: string): DownloadStatus | null {
+    return this.downloadQueue.get(videoId) || null;
+  }
+
+  getAllDownloadStatuses(): DownloadStatus[] {
+    return Array.from(this.downloadQueue.values());
+  }
+
+  getFailedDownloads(): string[] {
+    return [...this.failedDownloads];
+  }
+
+  clearDownloadQueue(): void {
+    // Keep failed ones for reference
+    const failed = Array.from(this.downloadQueue.entries())
+      .filter(([_, status]) => status.status === 'failed');
+
+    this.downloadQueue.clear();
+    failed.forEach(([id, status]) => this.downloadQueue.set(id, status));
   }
 }

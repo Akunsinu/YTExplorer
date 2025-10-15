@@ -244,6 +244,49 @@ app.post('/api/videos/download-all', async (req, res) => {
   console.log('Batch download completed');
 });
 
+// Get download status for all videos
+app.get('/api/downloads/status', (req, res) => {
+  try {
+    const statuses = downloader.getAllDownloadStatuses();
+    res.json(statuses);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get download status for a specific video
+app.get('/api/downloads/status/:id', (req, res) => {
+  try {
+    const status = downloader.getDownloadStatus(req.params.id);
+    if (!status) {
+      return res.status(404).json({ error: 'Download status not found' });
+    }
+    res.json(status);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get failed downloads
+app.get('/api/downloads/failed', (req, res) => {
+  try {
+    const failed = downloader.getFailedDownloads();
+    res.json({ failedVideoIds: failed, count: failed.length });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Clear download queue (keep failed for reference)
+app.post('/api/downloads/clear', (req, res) => {
+  try {
+    downloader.clearDownloadQueue();
+    res.json({ message: 'Download queue cleared' });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
