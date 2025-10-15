@@ -18,16 +18,6 @@ export default function Downloads() {
     }
   });
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'completed': return 'text-green-500';
-      case 'downloading': return 'text-blue-500';
-      case 'failed': return 'text-red-500';
-      case 'queued': return 'text-yellow-500';
-      default: return 'text-gray-500';
-    }
-  };
-
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'completed': return 'bg-green-500/20 text-green-400';
