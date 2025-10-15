@@ -26,7 +26,7 @@ export class YouTubeService {
       id: channel.id!,
       title: channel.snippet?.title || '',
       description: channel.snippet?.description || '',
-      customUrl: channel.snippet?.customUrl,
+      customUrl: channel.snippet?.customUrl ?? undefined,
       publishedAt: channel.snippet?.publishedAt || '',
       thumbnailUrl: channel.snippet?.thumbnails?.high?.url || '',
       subscriberCount: parseInt(channel.statistics?.subscriberCount || '0'),
@@ -105,7 +105,7 @@ export class YouTubeService {
             // Add replies
             if (thread.replies?.comments) {
               for (const reply of thread.replies.comments) {
-                comments.push(this.parseComment(reply, videoId, topComment.id));
+                comments.push(this.parseComment(reply, videoId, topComment.id ?? undefined));
               }
             }
           }
