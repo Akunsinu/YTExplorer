@@ -19,7 +19,7 @@ const downloadsPath = process.env.DOWNLOADS_PATH || './downloads';
 const db = new DatabaseService(dbPath);
 const youtube = new YouTubeService(process.env.YOUTUBE_API_KEY!);
 const downloader = new VideoDownloader(downloadsPath);
-const channelId = process.env.CHANNEL_ID!;
+const channelId = process.env.YOUTUBE_CHANNEL_ID!;
 const syncService = new SyncService(db, youtube, channelId, downloader);
 
 // Track sync status
