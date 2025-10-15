@@ -84,6 +84,45 @@ app.get('/api/videos/:id/comments', (req, res) => {
   }
 });
 
+// Export comments as CSV
+app.get('/api/videos/:id/comments/export', (req, res) => {
+  try {
+    const comments = db.getCommentsByVideo(req.params.id);
+    const video = db.getVideo(req.params.id);
+
+    if (!video) {
+      return res.status(404).json({ error: 'Video not found' });
+    }
+
+    // Create CSV header
+    const csvRows = [
+      ['Author', 'Comment', 'Likes', 'Published Date', 'Is Reply', 'Parent Comment ID'].join(',')
+    ];
+
+    // Add comment rows
+    comments.forEach(comment => {
+      const row = [
+        `"${comment.authorDisplayName.replace(/"/g, '""')}"`,
+        `"${comment.textOriginal.replace(/"/g, '""')}"`,
+        comment.likeCount,
+        comment.publishedAt,
+        comment.parentId ? 'Yes' : 'No',
+        comment.parentId || ''
+      ].join(',');
+      csvRows.push(row);
+    });
+
+    const csv = csvRows.join('\n');
+
+    // Set headers for file download
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename="${video.title.replace(/[^a-z0-9]/gi, '_')}_comments.csv"`);
+    res.send(csv);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Search videos
 app.get('/api/search/videos', (req, res) => {
   try {
