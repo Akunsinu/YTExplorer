@@ -81,7 +81,7 @@ export default function VideoDetail() {
               controls
               preload="metadata"
             >
-              <source src={`http://localhost:3001/${video.localPath}`} type="video/mp4" />
+              <source src={`/api/${video.localPath}`} type="video/mp4" />
               Your browser does not support the video tag.
             </video>
           ) : (

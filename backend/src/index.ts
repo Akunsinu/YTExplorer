@@ -29,8 +29,9 @@ let isSyncing = false;
 app.use(cors());
 app.use(express.json());
 
-// Serve downloaded videos
+// Serve downloaded videos (both paths for compatibility)
 app.use('/downloads', express.static(downloadsPath));
+app.use('/api/downloads', express.static(downloadsPath));
 
 // API Routes
 
