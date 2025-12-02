@@ -22,7 +22,7 @@ nano .env
 
 Add your YouTube credentials:
 ```env
-YOUTUBE_CHANNEL_ID=UCG9D682p5Fg5mJcZpqip62Q
+YOUTUBE_CHANNEL_ID=UCUORv_qpgmg8N5plVqlYjXg
 YOUTUBE_API_KEY=your_actual_api_key_here
 ```
 
